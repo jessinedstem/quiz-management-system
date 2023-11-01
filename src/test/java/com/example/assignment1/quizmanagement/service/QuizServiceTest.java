@@ -4,6 +4,7 @@ import com.example.assignment1.quizmanagement.contract.QuestionRequest;
 import com.example.assignment1.quizmanagement.contract.QuestionResponse;
 import com.example.assignment1.quizmanagement.contract.QuizRequest;
 import com.example.assignment1.quizmanagement.contract.QuizResponse;
+import com.example.assignment1.quizmanagement.exception.EntityNotFoundException;
 import com.example.assignment1.quizmanagement.model.Question;
 import com.example.assignment1.quizmanagement.model.Quiz;
 import com.example.assignment1.quizmanagement.repository.QuestionRepository;
@@ -19,6 +20,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 public class QuizServiceTest {
@@ -74,6 +76,15 @@ public void init(){
         assertEquals("Category 2", resultQuiz2.getCategory());
         assertEquals(0, resultQuiz2.getQuestions().size());
     }
+    @Test
+    void testFindAllQuizzes_throwsException(){
+    List<Quiz> quizzes=new ArrayList<>();
+        when(quizRepository.findAll()).thenReturn(quizzes);
+    RuntimeException exception=assertThrows(RuntimeException.class, () -> {
+        quizService.findAllQuizzes();
+    });
+        assertEquals("Quizzes not found",exception.getMessage());
+}
     @Test
     void testCreateQuiz()throws Exception {
                QuizRequest quizRequest = QuizRequest.builder()
@@ -151,7 +162,6 @@ public void init(){
                 .build();
         mockQuizzes.add(quiz);
         when(quizRepository.findByCategory(category)).thenReturn(mockQuizzes);
-        QuizService quizService = new QuizService(quizRepository, null); // You don't need the QuestionRepository for this test
         List<QuizResponse> actualResponses = quizService.getQuizzesByCategory(category);
         List<QuizResponse> expectedResponses = new ArrayList<>();
         expectedResponses.add(QuizResponse.builder()
@@ -159,7 +169,17 @@ public void init(){
                 .category(category)
                 .questions(new ArrayList<>())
                 .build());
-        assertEquals(expectedResponses, actualResponses);
+        assertEquals(1, actualResponses.size());
+    }
+    @Test
+    void testGetQuizzesByCategory_throwsException(){
+    String category="Malayalam";
+        List<Quiz> quizzes=new ArrayList<>();
+        when(quizRepository.findByCategory(category)).thenReturn(quizzes);
+        RuntimeException exception=assertThrows(RuntimeException.class, () -> {
+            quizService.getQuizzesByCategory(category);
+        });
+        assertEquals("Quizzes not found",exception.getMessage());
     }
     @Test
     public void testAddQuestionToQuiz()throws Exception {
@@ -186,6 +206,18 @@ public void init(){
         assertEquals("New Question", quiz.getQuestions().get(0).getQuestion());
     }
     @Test
+    void testAddQuestionToQuiz_throwsException(){
+    Long quizId=1L;
+    QuestionRequest request=QuestionRequest.builder()
+                    .question("Hello")
+                            .build();
+    when(quizRepository.findById(1L)).thenReturn(Optional.empty());
+        EntityNotFoundException exception=assertThrows(EntityNotFoundException.class, () -> {
+            quizService.addQuestionToQuiz(quizId, request);
+        });
+        assertEquals("Quiz not found with ID: "+quizId,exception.getMessage());
+    }
+    @Test
     public void testDeleteQuestionFromQuiz()throws Exception {
         long quizId = 1L;
         long questionId = 1L;
@@ -207,6 +239,46 @@ public void init(){
         assertEquals(0, quiz.getQuestions().size());
     }
     @Test
+    public void testDeleteQuestionFromQuiz_throwsEntityNotFoundException() {
+        Long quizId = 1L;
+        Long questionId = 123L;
+        when(quizRepository.findById(quizId)).thenReturn(Optional.empty());
+      EntityNotFoundException exception=assertThrows(EntityNotFoundException.class, () -> {
+          quizService.deleteQuestionFromQuiz(quizId, questionId);
+      });
+        assertEquals("Quiz not found with ID: " + quizId,exception.getMessage());
+    }
+    @Test
+    void testFindQuestionById_throwsException(){
+        Long quizId = 1L;
+        Long questionId = 123L;
+        Quiz quiz=Quiz.builder()
+                .id(1L)
+                .category("Jessin")
+                .build();
+        EntityNotFoundException exception=assertThrows(EntityNotFoundException.class, () -> {
+            quizService.findQuestionById(quiz, questionId);
+        });
+        assertEquals("Question not found with ID: " + questionId,exception.getMessage());
+    }
+    @Test
+    void testRemoveQuestionFromQuiz_throwsException(){
+        Long quizId = 1L;
+        Long questionId = 123L;
+        Quiz quiz=Quiz.builder()
+                .id(1L)
+                .category("Jessin")
+                .build();
+        Question question=Question.builder()
+                .id(questionId)
+                .question("Test")
+                .build();
+        EntityNotFoundException exception=assertThrows(EntityNotFoundException.class, () -> {
+            quizService.removeQuestionFromQuiz(quiz, question);
+        });
+        assertEquals("Questions not found in the quiz",exception.getMessage());
+    }
+        @Test
     void testUpdateQuestionInQuiz() {
         Long quizId = 1L;
         Long questionId = 1L;

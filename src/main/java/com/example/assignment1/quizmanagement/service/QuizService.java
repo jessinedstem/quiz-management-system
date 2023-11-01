@@ -150,7 +150,7 @@ public class QuizService {
         return "Successfully deleted the question with ID " + questionId + " from the quiz with ID " + quizId;
     }
 
-    private Question findQuestionById(Quiz quiz, Long questionId) {
+    public Question findQuestionById(Quiz quiz, Long questionId) {
         if (quiz.getQuestions() == null) {
             throw new EntityNotFoundException("Question not found with ID: " + questionId);
         }
@@ -160,7 +160,7 @@ public class QuizService {
                 .orElseThrow(() -> new EntityNotFoundException("Question not found with ID: " + questionId));
     }
 
-    private void removeQuestionFromQuiz(Quiz quiz, Question question) {
+    public void removeQuestionFromQuiz(Quiz quiz, Question question) {
         if (quiz.getQuestions() == null) {
             throw new EntityNotFoundException("Questions not found in the quiz");
         }
